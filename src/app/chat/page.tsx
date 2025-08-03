@@ -1,53 +1,96 @@
 "use client";
 
+import AiMessage from "@/components/ai-message";
+import { ChatInput } from "@/components/chat-input";
+import { ToolCall } from "@/components/tool-call";
+import { Button } from "@/components/ui/button";
+import UserMessage from "@/components/user-message";
 import { useChat } from "@ai-sdk/react";
 import { useState } from "react";
-
+const suggestions = [
+  "How does similarity search work with a Vector DB?",
+  "What is DataStax Enterprise?",
+  "How does CassIO work?",
+  "What are some common FAQs about Astra?",
+];
 export default function ChatPage() {
   const [input, setInput] = useState("");
-  const { messages, sendMessage } = useChat();
+  const { messages, sendMessage, status, stop } = useChat();
+  const handleSubmit = async () => {
+    if (status === "streaming" || status === "submitted") {
+      await stop();
+      return;
+    }
+    if (input.trim() === "") {
+      return;
+    }
+    const newMessage = input;
+    setInput("");
+    await sendMessage({ text: newMessage });
+  };
   return (
-    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
-      <div className="space-y-4">
-        {messages.map((m) => (
-          <div key={m.id} className="whitespace-pre-wrap">
-            <div>
-              <div className="font-bold">{m.role}</div>
-              {m.parts.map((part, idx) => {
-                switch (part.type) {
-                  case "text":
-                    return <p key={idx}>{part.text}</p>;
-                  case "tool-searchDocumentation":
-                    return (
-                      <p key={idx}>
-                        call{part.state === "output-available" ? "ed" : "ing"}{" "}
-                        tool: {part.type}
-                        <pre className="my-4 bg-zinc-100 p-2 rounded-sm">
-                          {JSON.stringify(part.input, null, 2)}
-                        </pre>
-                      </p>
-                    );
-                }
+    <div className="flex flex-col w-full max-w-4xl h-screen py-12 mx-auto">
+      {messages.length > 0 ? (
+        <div className="h-[70vh] overflow-y-auto no-scrollbar">
+          {messages.map((m) => (
+            <div key={m.id} className="flex flex-col gap-8 whitespace-pre-wrap">
+              <div>
+                {m.parts.map((part, idx) => {
+                  switch (part.type) {
+                    case "text":
+                      if (m.role === "user") {
+                        return <UserMessage key={idx} content={part.text} />;
+                      } else {
+                        return <AiMessage content={part.text} />;
+                      }
+                    case "tool-search_documentation":
+                      return (
+                        <div className="py-4">
+                          <ToolCall
+                            type={part.type}
+                            state={part.state}
+                            input={part.input as Record<string, unknown>}
+                          />
+                        </div>
+                      );
+                  }
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="h-[70vh] flex items-center justify-center">
+          <div className="space-y-12 text-center">
+            <h2 className="text-4xl font-inter">Datastax AI</h2>
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              {suggestions.map((value, idx) => {
+                return (
+                  <Button
+                    onClick={() => {
+                      setInput(value);
+                    }}
+                    variant={"secondary"}
+                    className="cursor-pointer"
+                    size={"sm"}
+                    key={idx}
+                  >
+                    {value}
+                  </Button>
+                );
               })}
             </div>
           </div>
-        ))}
-      </div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage({ text: input });
-          setInput("");
-        }}
-      >
-        <input
-          className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
-          value={input}
-          placeholder="Say something..."
-          onChange={(e) => setInput(e.currentTarget.value)}
+        </div>
+      )}
+      <div className="fixed bottom-6 max-w-4xl w-full">
+        <ChatInput
+          setInput={setInput}
+          input={input}
+          handleSubmit={handleSubmit}
+          status={status}
         />
-      </form>
+      </div>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { getContext } from "@/lib/get-context";
 import { z } from "zod";
 
-export const searchDocumentation = tool({
+export const search_documentation = tool({
   name: "search_documentation",
   description:
     "get information from Astra db and cassandra docs to answer user's queries.",

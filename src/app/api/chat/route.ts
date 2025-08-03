@@ -1,6 +1,6 @@
 import { SYSTEM_PROMPT } from "@/ai/prompts";
 import { google } from "@/ai/providers/google";
-import { searchDocumentation } from "@/ai/tools/search-documentation";
+import { search_documentation } from "@/ai/tools/search-documentation";
 import { stepCountIs, convertToModelMessages, streamText } from "ai";
 import { NextRequest } from "next/server";
 
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       system: SYSTEM_PROMPT,
       messages: convertToModelMessages(messages),
       tools: {
-        searchDocumentation,
+        search_documentation,
       },
       stopWhen: stepCountIs(5),
     });
